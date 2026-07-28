@@ -23,7 +23,6 @@
       </div>
     </header>
 
-    <!-- Register Test Form -->
     <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
       <h2 class="text-xl font-semibold mb-4 text-slate-700">Register New Exome Test</h2>
       <form id="testForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -59,11 +58,16 @@
       </form>
     </div>
 
-    <!-- Active Tests Table -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-      <div class="p-4 border-b bg-gray-100 flex justify-between items-center">
-        <h2 class="text-lg font-semibold text-slate-700">Active Patient Tests</h2>
-        <span id="recordCount" class="text-xs bg-blue-100 text-blue-800 font-bold px-2.5 py-0.5 rounded">0 Records</span>
+      <div class="p-4 border-b bg-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-3">
+          <h2 class="text-lg font-semibold text-slate-700">Active Patient Tests</h2>
+          <span id="recordCount" class="text-xs bg-blue-100 text-blue-800 font-bold px-2.5 py-0.5 rounded">0 Records</span>
+        </div>
+        
+        <div class="w-full md:w-80 relative">
+          <input type="text" id="searchInput" onkeyup="filterRecords()" placeholder="🔍 Search by Doctor, Patient, MRN..." class="w-full border border-gray-300 rounded-md py-1.5 px-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-left text-sm">
@@ -87,7 +91,6 @@
     </div>
   </div>
 
-  <!-- ✏️ EDIT MODAL POPUP -->
   <div id="editModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center hidden z-50">
     <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-xl space-y-4">
       <div class="flex justify-between items-center border-b pb-2">
@@ -133,9 +136,9 @@
 
   <script>
     // 🔑 ADMIN SECURITY CONFIGURATION
-    // Change "1234" to your custom passcode!
     const ADMIN_PIN = "1234";
     let isAdminUnlocked = false;
+    let currentRecordsData = null; // Store fetched database records locally for fast filtering
 
     // ⚙️ FIREBASE CONFIGURATION
     const firebaseConfig = {
@@ -214,22 +217,45 @@
       });
     });
 
-    // 🔄 Render Table Real-Time
+    // 🔄 Real-time Database Listener
     db.on("value", (snapshot) => {
+      currentRecordsData = snapshot.val();
+      renderTable(currentRecordsData);
+    });
+
+    // 🎨 Render Table Data with Optional Search Filter
+    function renderTable(data) {
       const tableBody = document.getElementById("trackerTableBody");
       tableBody.innerHTML = "";
-      
-      const data = snapshot.val();
+      const query = document.getElementById("searchInput").value.toLowerCase().trim();
+
       if (!data) {
         tableBody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-gray-400">No exome tests logged yet.</td></tr>`;
         document.getElementById("recordCount").innerText = "0 Records";
         return;
       }
 
-      const keys = Object.keys(data);
+      let keys = Object.keys(data).reverse();
+
+      // Filter by Search Input (Doctor, Patient, MRN, Lab)
+      if (query !== "") {
+        keys = keys.filter(id => {
+          const item = data[id];
+          return (item.orderingDoctor && item.orderingDoctor.toLowerCase().includes(query)) ||
+                 (item.patientName && item.patientName.toLowerCase().includes(query)) ||
+                 (item.hospNumber && item.hospNumber.toLowerCase().includes(query)) ||
+                 (item.testingLab && item.testingLab.toLowerCase().includes(query));
+        });
+      }
+
       document.getElementById("recordCount").innerText = `${keys.length} Records`;
 
-      keys.reverse().forEach((id) => {
+      if (keys.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-gray-400">No matching records found.</td></tr>`;
+        return;
+      }
+
+      keys.forEach((id) => {
         const item = data[id];
         
         const regDateObj = new Date(item.regDate);
@@ -268,7 +294,7 @@
           <td class="py-3 px-4">${escapeHtml(item.testName)}</td>
           <td class="py-3 px-4">${escapeHtml(item.testingLab)}</td>
           <td class="py-3 px-4">${item.regDate}</td>
-          <td class="py-3 px-4">${escapeHtml(item.orderingDoctor)}</td>
+          <td class="py-3 px-4 font-medium text-slate-700">${escapeHtml(item.orderingDoctor)}</td>
           <td class="py-3 px-4">${tatBadgeHtml}</td>
           <td class="py-3 px-4 text-center">
             <input type="checkbox" 
@@ -287,12 +313,17 @@
         `;
         tableBody.appendChild(row);
       });
-    });
+    }
+
+    // 🔍 Search Input Trigger
+    function filterRecords() {
+      renderTable(currentRecordsData);
+    }
 
     // ✅ Toggle Checkbox (Requires Passcode)
     window.toggleResult = (id, isChecked) => {
       if (!verifyAdminAccess()) {
-        db.child(id).once("value", () => {}); // Revert state visually
+        renderTable(currentRecordsData); // Revert state visually
         return;
       }
 
