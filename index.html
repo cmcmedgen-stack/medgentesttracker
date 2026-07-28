@@ -23,6 +23,7 @@
       </div>
     </header>
 
+    <!-- Register Test Form -->
     <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
       <h2 class="text-xl font-semibold mb-4 text-slate-700">Register New Exome Test</h2>
       <form id="testForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -58,6 +59,7 @@
       </form>
     </div>
 
+    <!-- Active Tests Table -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
       <div class="p-4 border-b bg-gray-100 flex justify-between items-center">
         <h2 class="text-lg font-semibold text-slate-700">Active Patient Tests</h2>
@@ -85,6 +87,7 @@
     </div>
   </div>
 
+  <!-- ✏️ EDIT MODAL POPUP -->
   <div id="editModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center hidden z-50">
     <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-xl space-y-4">
       <div class="flex justify-between items-center border-b pb-2">
@@ -130,7 +133,7 @@
 
   <script>
     // 🔑 ADMIN SECURITY CONFIGURATION
-    // Change "1234" below to whatever password or PIN you want to use!
+    // Change "1234" to your custom passcode!
     const ADMIN_PIN = "2311";
     let isAdminUnlocked = false;
 
@@ -154,7 +157,7 @@
     function verifyAdminAccess() {
       if (isAdminUnlocked) return true;
 
-      const inputPin = prompt("🔒 Admin Passcode Required to Edit Records:\nEnter Passcode:");
+      const inputPin = prompt("🔒 Admin Passcode Required:\nEnter Passcode:");
       if (inputPin === ADMIN_PIN) {
         isAdminUnlocked = true;
         updateAdminBadge();
@@ -273,9 +276,12 @@
                    ${item.resultsReceived ? "checked" : ""} 
                    onchange="toggleResult('${id}', this.checked)">
           </td>
-          <td class="py-3 px-4 text-center">
+          <td class="py-3 px-4 text-center space-x-1">
             <button onclick="openEditModal('${id}')" class="text-blue-600 hover:text-blue-800 font-semibold text-xs bg-blue-50 border border-blue-200 px-2.5 py-1 rounded hover:bg-blue-100 transition">
               ✏️ Edit
+            </button>
+            <button onclick="deleteRecord('${id}')" class="text-red-600 hover:text-red-800 font-semibold text-xs bg-red-50 border border-red-200 px-2.5 py-1 rounded hover:bg-red-100 transition">
+              🗑️ Delete
             </button>
           </td>
         `;
@@ -283,11 +289,10 @@
       });
     });
 
-    // ✅ Toggle "Results Received" Checkbox (Requires Passcode)
+    // ✅ Toggle Checkbox (Requires Passcode)
     window.toggleResult = (id, isChecked) => {
       if (!verifyAdminAccess()) {
-        // Revert checkbox back if unauthorized
-        db.child(id).once("value", () => {}); // trigger re-render
+        db.child(id).once("value", () => {}); // Revert state visually
         return;
       }
 
@@ -296,7 +301,7 @@
       });
     };
 
-    // ✏️ Open Edit Modal & Load Existing Data (Requires Passcode)
+    // ✏️ Open Edit Modal (Requires Passcode)
     window.openEditModal = (id) => {
       if (!verifyAdminAccess()) return;
 
@@ -316,12 +321,26 @@
       });
     };
 
+    // 🗑️ Delete Record (Requires Passcode)
+    window.deleteRecord = (id) => {
+      if (!verifyAdminAccess()) return;
+
+      const confirmDelete = confirm("Are you sure you want to permanently delete this record?");
+      if (confirmDelete) {
+        db.child(id).remove((err) => {
+          if (err) {
+            alert("Error deleting record: " + err.message);
+          }
+        });
+      }
+    };
+
     // ❌ Close Edit Modal
     window.closeEditModal = () => {
       document.getElementById("editModal").classList.add("hidden");
     };
 
-    // 💾 Save Edited Record to Firebase
+    // 💾 Save Edited Record
     document.getElementById("editForm").addEventListener("submit", (e) => {
       e.preventDefault();
 
