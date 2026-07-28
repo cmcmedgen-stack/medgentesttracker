@@ -1,376 +1,458 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Inpatient Exome Test Tracker</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-</head>
-<body class="bg-gray-50 text-gray-800 font-sans p-6">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inpatient Exome Test Tracker</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
 
-  <div class="max-w-7xl mx-auto space-y-6">
-    <header class="border-b pb-4 flex justify-between items-center">
-      <div>
-        <h1 class="text-3xl font-bold text-slate-800">🧪 Inpatient Exome Test Tracker</h1>
-        <p class="text-sm text-gray-500">Real-time status tracking for clinical exome diagnostics</p>
-      </div>
-      <div>
-        <button id="adminStatusBtn" onclick="toggleAdminSession()" class="text-xs bg-slate-200 hover:bg-slate-300 font-semibold px-3 py-1.5 rounded transition">
-          🔒 Admin: Locked
-        </button>
-      </div>
+        body {
+            background-color: #f4f7f9;
+            color: #333;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            background: #ffffff;
+            padding: 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        header h1 {
+            color: #1a365d;
+            font-size: 1.8rem;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .card h2 {
+            font-size: 1.2rem;
+            color: #2b6cb0;
+            margin-bottom: 15px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #4a5568;
+        }
+
+        .form-group input, 
+        .form-group select {
+            padding: 10px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus, 
+        .form-group select:focus {
+            border-color: #3182ce;
+        }
+
+        .form-actions {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-primary {
+            background-color: #3182ce;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #2b6cb0;
+        }
+
+        .btn-secondary {
+            background-color: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .btn-secondary:hover {
+            background-color: #cbd5e0;
+        }
+
+        .btn-danger {
+            background-color: #e53e3e;
+            color: white;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+
+        .btn-danger:hover {
+            background-color: #c53030;
+        }
+
+        .btn-edit {
+            background-color: #dd6b20;
+            color: white;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            margin-right: 5px;
+        }
+
+        .btn-edit:hover {
+            background-color: #c05621;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .filter-bar input, .filter-bar select {
+            padding: 8px 12px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.88rem;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e2e8f0;
+            white-space: nowrap;
+        }
+
+        th {
+            background-color: #f7fafc;
+            color: #4a5568;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .status-collected { background-color: #feebc8; color: #744210; }
+        .status-sequencing { background-color: #ebf8ff; color: #2b6cb0; }
+        .status-analysis { background-color: #e9d8fd; color: #553c9a; }
+        .status-completed { background-color: #c6f6d5; color: #22543d; }
+
+        .tag-yes { color: #22543d; font-weight: bold; }
+        .tag-no { color: #a0aec0; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>🧬 Inpatient Exome Test Tracker</h1>
     </header>
 
-    <!-- Register Test Form -->
-    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-      <h2 class="text-xl font-semibold mb-4 text-slate-700">Register New Exome Test</h2>
-      <form id="testForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Patient Name</label>
-          <input type="text" id="patientName" required placeholder="e.g. John Doe" class="w-full border p-2 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Hosp / MRN Number</label>
-          <input type="text" id="hospNumber" required placeholder="e.g. H123456" class="w-full border p-2 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Test Name</label>
-          <input type="text" id="testName" required value="Clinical Exome Sequencing" class="w-full border p-2 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Testing Lab</label>
-          <input type="text" id="testingLab" required placeholder="e.g. Central Genomics Lab" class="w-full border p-2 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Registration Date</label>
-          <input type="date" id="regDate" required class="w-full border p-2 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Ordering Doctor</label>
-          <input type="text" id="orderingDoctor" required placeholder="e.g. Dr. Smith" class="w-full border p-2 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-        </div>
-        <div class="md:col-span-3">
-          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded transition">
-            + Add Test Record
-          </button>
-        </div>
-      </form>
-    </div>
-
-    <!-- Active Tests Table -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-      <div class="p-4 border-b bg-gray-100 flex justify-between items-center">
-        <h2 class="text-lg font-semibold text-slate-700">Active Patient Tests</h2>
-        <span id="recordCount" class="text-xs bg-blue-100 text-blue-800 font-bold px-2.5 py-0.5 rounded">0 Records</span>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm">
-          <thead class="bg-gray-50 border-b text-gray-600 uppercase text-xs">
-            <tr>
-              <th class="py-3 px-4">Patient Name</th>
-              <th class="py-3 px-4">Hosp No.</th>
-              <th class="py-3 px-4">Test</th>
-              <th class="py-3 px-4">Lab</th>
-              <th class="py-3 px-4">Reg. Date</th>
-              <th class="py-3 px-4">Ordering Doctor</th>
-              <th class="py-3 px-4">Turnaround Time</th>
-              <th class="py-3 px-4 text-center">Results Received?</th>
-              <th class="py-3 px-4 text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="trackerTableBody" class="divide-y divide-gray-100">
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- ✏️ EDIT MODAL POPUP -->
-  <div id="editModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center hidden z-50">
-    <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-xl space-y-4">
-      <div class="flex justify-between items-center border-b pb-2">
-        <h3 class="text-lg font-bold text-slate-800">✏️ Edit Exome Test Record</h3>
-        <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
-      </div>
-
-      <form id="editForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <input type="hidden" id="editRecordId">
-        
-        <div>
-          <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Patient Name</label>
-          <input type="text" id="editPatientName" required class="w-full border p-2 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Hosp / MRN Number</label>
-          <input type="text" id="editHospNumber" required class="w-full border p-2 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Test Name</label>
-          <input type="text" id="editTestName" required class="w-full border p-2 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Testing Lab</label>
-          <input type="text" id="editTestingLab" required class="w-full border p-2 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Registration Date</label>
-          <input type="date" id="editRegDate" required class="w-full border p-2 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Ordering Doctor</label>
-          <input type="text" id="editOrderingDoctor" required class="w-full border p-2 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-        </div>
-
-        <div class="md:col-span-2 flex justify-end gap-2 pt-4 border-t">
-          <button type="button" onclick="closeEditModal()" class="px-4 py-2 border rounded text-sm text-gray-600 hover:bg-gray-100">Cancel</button>
-          <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">Save Changes</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <script>
-    // 🔑 ADMIN SECURITY CONFIGURATION
-    // Change "1234" to your custom passcode!
-    const ADMIN_PIN = "1234";
-    let isAdminUnlocked = false;
-
-    // ⚙️ FIREBASE CONFIGURATION
-    const firebaseConfig = {
-      apiKey: "AIzaSyBBXG6uPml-a8Q6Fgk5RldyQBhlSfsj-TA",
-      authDomain: "ip-result-tracking.firebaseapp.com",
-      databaseURL: "https://ip-result-tracking-default-rtdb.firebaseio.com",
-      projectId: "ip-result-tracking",
-      storageBucket: "ip-result-tracking.firebasestorage.app",
-      messagingSenderId: "811691909994",
-      appId: "1:811691909994:web:203d9da82de90e663fbb13"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database().ref("exome_tests");
-
-    document.getElementById("regDate").valueAsDate = new Date();
-
-    // 🔐 Admin Verification Helper
-    function verifyAdminAccess() {
-      if (isAdminUnlocked) return true;
-
-      const inputPin = prompt("🔒 Admin Passcode Required:\nEnter Passcode:");
-      if (inputPin === ADMIN_PIN) {
-        isAdminUnlocked = true;
-        updateAdminBadge();
-        return true;
-      } else if (inputPin !== null) {
-        alert("❌ Incorrect Passcode. Access Denied.");
-      }
-      return false;
-    }
-
-    function toggleAdminSession() {
-      if (isAdminUnlocked) {
-        isAdminUnlocked = false;
-        alert("🔒 Admin mode locked.");
-      } else {
-        verifyAdminAccess();
-      }
-      updateAdminBadge();
-    }
-
-    function updateAdminBadge() {
-      const btn = document.getElementById("adminStatusBtn");
-      if (isAdminUnlocked) {
-        btn.innerText = "🔓 Admin: Unlocked";
-        btn.className = "text-xs bg-green-100 text-green-800 border border-green-300 font-semibold px-3 py-1.5 rounded transition";
-      } else {
-        btn.innerText = "🔒 Admin: Locked";
-        btn.className = "text-xs bg-slate-200 hover:bg-slate-300 text-gray-700 font-semibold px-3 py-1.5 rounded transition";
-      }
-    }
-
-    // 📥 Submit New Exome Test
-    document.getElementById("testForm").addEventListener("submit", (e) => {
-      e.preventDefault();
-
-      const newTest = {
-        patientName: document.getElementById("patientName").value,
-        hospNumber: document.getElementById("hospNumber").value,
-        testName: document.getElementById("testName").value,
-        testingLab: document.getElementById("testingLab").value,
-        regDate: document.getElementById("regDate").value,
-        orderingDoctor: document.getElementById("orderingDoctor").value,
-        resultsReceived: false,
-        createdAt: firebase.database.ServerValue.TIMESTAMP
-      };
-
-      db.push(newTest, (err) => {
-        if (err) {
-          alert("Error saving record: " + err.message);
-        } else {
-          document.getElementById("testForm").reset();
-          document.getElementById("regDate").valueAsDate = new Date();
-        }
-      });
-    });
-
-    // 🔄 Render Table Real-Time
-    db.on("value", (snapshot) => {
-      const tableBody = document.getElementById("trackerTableBody");
-      tableBody.innerHTML = "";
-      
-      const data = snapshot.val();
-      if (!data) {
-        tableBody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-gray-400">No exome tests logged yet.</td></tr>`;
-        document.getElementById("recordCount").innerText = "0 Records";
-        return;
-      }
-
-      const keys = Object.keys(data);
-      document.getElementById("recordCount").innerText = `${keys.length} Records`;
-
-      keys.reverse().forEach((id) => {
-        const item = data[id];
-        
-        const regDateObj = new Date(item.regDate);
-        const todayObj = new Date();
-        const diffTime = todayObj - regDateObj;
-        const daysElapsed = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-        let tatBadgeHtml = "";
-        let rowClass = item.resultsReceived ? "bg-green-50/50" : "hover:bg-gray-50";
-
-        if (item.resultsReceived) {
-          tatBadgeHtml = `<span class="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-semibold">✓ Completed</span>`;
-        } else if (daysElapsed >= 30) {
-          const weeksOverdue = Math.floor((daysElapsed - 30) / 7) + 1;
-          rowClass = "bg-red-50 hover:bg-red-100/60 transition";
-          tatBadgeHtml = `
-            <div class="flex flex-col items-start gap-1">
-              <span class="text-xs bg-red-600 text-white px-2.5 py-0.5 rounded font-bold animate-pulse">
-                ⚠️ REMINDER: Overdue (${daysElapsed} Days)
-              </span>
-              <span class="text-[11px] font-semibold text-red-700">
-                Weekly Follow-up #${weeksOverdue} Required
-              </span>
+    <div class="card">
+        <h2 id="formTitle">Add New Exome Test Record</h2>
+        <form id="trackerForm">
+            <input type="hidden" id="recordId">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="mrn">MRN / Patient ID</label>
+                    <input type="text" id="mrn" required placeholder="e.g. PAT-10923">
+                </div>
+                <div class="form-group">
+                    <label for="patientName">Patient Name</label>
+                    <input type="text" id="patientName" required placeholder="Full Name">
+                </div>
+                <div class="form-group">
+                    <label for="admissionDate">Admission Date</label>
+                    <input type="date" id="admissionDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="sampleDate">Sample Collection Date</label>
+                    <input type="date" id="sampleDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="specimenType">Specimen Type</label>
+                    <select id="specimenType" required>
+                        <option value="">Select Specimen</option>
+                        <option value="Whole Blood">Whole Blood</option>
+                        <option value="Tissue">Tissue</option>
+                        <option value="Saliva">Saliva</option>
+                        <option value="Extracted DNA">Extracted DNA</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="orderingPhysician">Ordering Physician</label>
+                    <input type="text" id="orderingPhysician" placeholder="Dr. Name">
+                </div>
+                <div class="form-group">
+                    <label for="status">Test Status</label>
+                    <select id="status" required>
+                        <option value="Sample Collected">Sample Collected</option>
+                        <option value="Sequencing">Sequencing</option>
+                        <option value="Variant Analysis">Variant Analysis</option>
+                        <option value="Completed">Completed</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="extraSampleReceived">Extra Sample Received?</label>
+                    <select id="extraSampleReceived">
+                        <option value="No">No</option>
+                        <option value="Yes">Yes</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="ipCharged">IP Charged?</label>
+                    <select id="ipCharged">
+                        <option value="No">No</option>
+                        <option value="Yes">Yes</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="btnCancel" onclick="resetForm()" style="display: none;">Cancel</button>
+                    <button type="submit" class="btn-primary" id="btnSubmit">Save Record</button>
+                </div>
             </div>
-          `;
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Inpatient Test Dashboard</h2>
+        <div class="filter-bar">
+            <input type="text" id="searchInput" placeholder="Search by MRN or Name..." oninput="renderTable()">
+            <select id="statusFilter" onchange="renderTable()">
+                <option value="ALL">All Statuses</option>
+                <option value="Sample Collected">Sample Collected</option>
+                <option value="Sequencing">Sequencing</option>
+                <option value="Variant Analysis">Variant Analysis</option>
+                <option value="Completed">Completed</option>
+            </select>
+        </div>
+
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>MRN</th>
+                        <th>Patient Name</th>
+                        <th>Admission Date</th>
+                        <th>Sample Date</th>
+                        <th>Specimen</th>
+                        <th>Physician</th>
+                        <th>TAT (Days)</th>
+                        <th>Status</th>
+                        <th>Extra Sample Recv.</th>
+                        <th>IP Charged</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="trackerTableBody">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const ADMIN_PASSCODE = "1234"; // Set your preferred Admin Passcode
+    let trackerData = JSON.parse(localStorage.getItem("exome_tracker_db")) || [];
+
+    document.getElementById("trackerForm").addEventListener("submit", function(e) {
+        e.preventDefault();
+
+        const id = document.getElementById("recordId").value;
+        const record = {
+            id: id ? parseInt(id) : Date.now(),
+            mrn: document.getElementById("mrn").value,
+            patientName: document.getElementById("patientName").value,
+            admissionDate: document.getElementById("admissionDate").value,
+            sampleDate: document.getElementById("sampleDate").value,
+            specimenType: document.getElementById("specimenType").value,
+            orderingPhysician: document.getElementById("orderingPhysician").value,
+            status: document.getElementById("status").value,
+            // Reading Form Data for Extra Fields
+            extraSampleReceived: document.getElementById("extraSampleReceived").value,
+            ipCharged: document.getElementById("ipCharged").value
+        };
+
+        if (id) {
+            // Edit existing
+            const index = trackerData.findIndex(item => item.id === parseInt(id));
+            if (index !== -1) trackerData[index] = record;
         } else {
-          tatBadgeHtml = `<span class="text-xs bg-amber-100 text-amber-800 px-2.5 py-1 rounded font-medium">${daysElapsed} Day(s) Pending</span>`;
+            // Add new
+            trackerData.push(record);
         }
 
-        const row = document.createElement("tr");
-        row.className = rowClass;
-
-        row.innerHTML = `
-          <td class="py-3 px-4 font-semibold text-slate-800">${escapeHtml(item.patientName)}</td>
-          <td class="py-3 px-4 font-mono text-xs">${escapeHtml(item.hospNumber)}</td>
-          <td class="py-3 px-4">${escapeHtml(item.testName)}</td>
-          <td class="py-3 px-4">${escapeHtml(item.testingLab)}</td>
-          <td class="py-3 px-4">${item.regDate}</td>
-          <td class="py-3 px-4">${escapeHtml(item.orderingDoctor)}</td>
-          <td class="py-3 px-4">${tatBadgeHtml}</td>
-          <td class="py-3 px-4 text-center">
-            <input type="checkbox" 
-                   class="w-5 h-5 text-blue-600 rounded cursor-pointer accent-blue-600"
-                   ${item.resultsReceived ? "checked" : ""} 
-                   onchange="toggleResult('${id}', this.checked)">
-          </td>
-          <td class="py-3 px-4 text-center space-x-1">
-            <button onclick="openEditModal('${id}')" class="text-blue-600 hover:text-blue-800 font-semibold text-xs bg-blue-50 border border-blue-200 px-2.5 py-1 rounded hover:bg-blue-100 transition">
-              ✏️ Edit
-            </button>
-            <button onclick="deleteRecord('${id}')" class="text-red-600 hover:text-red-800 font-semibold text-xs bg-red-50 border border-red-200 px-2.5 py-1 rounded hover:bg-red-100 transition">
-              🗑️ Delete
-            </button>
-          </td>
-        `;
-        tableBody.appendChild(row);
-      });
+        saveToStorage();
+        resetForm();
+        renderTable();
     });
 
-    // ✅ Toggle Checkbox (Requires Passcode)
-    window.toggleResult = (id, isChecked) => {
-      if (!verifyAdminAccess()) {
-        db.child(id).once("value", () => {}); // Revert state visually
-        return;
-      }
+    function calculateTAT(sampleDateStr) {
+        if (!sampleDateStr) return "-";
+        const sampleDate = new Date(sampleDateStr);
+        const today = new Date();
+        const diffTime = Math.abs(today - sampleDate);
+        return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    }
 
-      db.child(id).update({
-        resultsReceived: isChecked
-      });
-    };
+    function renderTable() {
+        const tbody = document.getElementById("trackerTableBody");
+        const searchQuery = document.getElementById("searchInput").value.toLowerCase();
+        const filterStatus = document.getElementById("statusFilter").value;
 
-    // ✏️ Open Edit Modal (Requires Passcode)
-    window.openEditModal = (id) => {
-      if (!verifyAdminAccess()) return;
+        tbody.innerHTML = "";
 
-      db.child(id).once("value", (snapshot) => {
-        const item = snapshot.val();
+        const filtered = trackerData.filter(item => {
+            const matchesSearch = item.mrn.toLowerCase().includes(searchQuery) || item.patientName.toLowerCase().includes(searchQuery);
+            const matchesStatus = filterStatus === "ALL" || item.status === filterStatus;
+            return matchesSearch && matchesStatus;
+        });
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; color:#a0aec0;">No records found.</td></tr>`;
+            return;
+        }
+
+        filtered.forEach(item => {
+            let statusBadgeClass = "status-collected";
+            if (item.status === "Sequencing") statusBadgeClass = "status-sequencing";
+            if (item.status === "Variant Analysis") statusBadgeClass = "status-analysis";
+            if (item.status === "Completed") statusBadgeClass = "status-completed";
+
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td><strong>${item.mrn}</strong></td>
+                <td>${item.patientName}</td>
+                <td>${item.admissionDate}</td>
+                <td>${item.sampleDate}</td>
+                <td>${item.specimenType}</td>
+                <td>${item.orderingPhysician || '-'}</td>
+                <td>${calculateTAT(item.sampleDate)} days</td>
+                <td><span class="badge ${statusBadgeClass}">${item.status}</span></td>
+                <td class="${item.extraSampleReceived === 'Yes' ? 'tag-yes' : 'tag-no'}">${item.extraSampleReceived}</td>
+                <td class="${item.ipCharged === 'Yes' ? 'tag-yes' : 'tag-no'}">${item.ipCharged}</td>
+                <td>
+                    <button class="btn-edit" onclick="editRecord(${item.id})">✏️ Edit</button>
+                    <button class="btn-danger" onclick="deleteRecordWithAuth(${item.id})">🗑️ Delete</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function editRecord(id) {
+        const item = trackerData.find(rec => rec.id === id);
         if (!item) return;
 
-        document.getElementById("editRecordId").value = id;
-        document.getElementById("editPatientName").value = item.patientName || "";
-        document.getElementById("editHospNumber").value = item.hospNumber || "";
-        document.getElementById("editTestName").value = item.testName || "";
-        document.getElementById("editTestingLab").value = item.testingLab || "";
-        document.getElementById("editRegDate").value = item.regDate || "";
-        document.getElementById("editOrderingDoctor").value = item.orderingDoctor || "";
+        document.getElementById("recordId").value = item.id;
+        document.getElementById("mrn").value = item.mrn;
+        document.getElementById("patientName").value = item.patientName;
+        document.getElementById("admissionDate").value = item.admissionDate;
+        document.getElementById("sampleDate").value = item.sampleDate;
+        document.getElementById("specimenType").value = item.specimenType;
+        document.getElementById("orderingPhysician").value = item.orderingPhysician;
+        document.getElementById("status").value = item.status;
+        
+        // Populating Form for Edit
+        document.getElementById("extraSampleReceived").value = item.extraSampleReceived || "No";
+        document.getElementById("ipCharged").value = item.ipCharged || "No";
 
-        document.getElementById("editModal").classList.remove("hidden");
-      });
-    };
-
-    // 🗑️ Delete Record (Requires Passcode)
-    window.deleteRecord = (id) => {
-      if (!verifyAdminAccess()) return;
-
-      const confirmDelete = confirm("Are you sure you want to permanently delete this record?");
-      if (confirmDelete) {
-        db.child(id).remove((err) => {
-          if (err) {
-            alert("Error deleting record: " + err.message);
-          }
-        });
-      }
-    };
-
-    // ❌ Close Edit Modal
-    window.closeEditModal = () => {
-      document.getElementById("editModal").classList.add("hidden");
-    };
-
-    // 💾 Save Edited Record
-    document.getElementById("editForm").addEventListener("submit", (e) => {
-      e.preventDefault();
-
-      if (!isAdminUnlocked) {
-        alert("Unauthorized.");
-        return;
-      }
-
-      const id = document.getElementById("editRecordId").value;
-      const updatedData = {
-        patientName: document.getElementById("editPatientName").value,
-        hospNumber: document.getElementById("editHospNumber").value,
-        testName: document.getElementById("editTestName").value,
-        testingLab: document.getElementById("editTestingLab").value,
-        regDate: document.getElementById("editRegDate").value,
-        orderingDoctor: document.getElementById("editOrderingDoctor").value
-      };
-
-      db.child(id).update(updatedData, (err) => {
-        if (err) {
-          alert("Error updating record: " + err.message);
-        } else {
-          closeEditModal();
-        }
-      });
-    });
-
-    function escapeHtml(str) {
-      return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;") : "";
+        document.getElementById("formTitle").innerText = "Edit Exome Test Record";
+        document.getElementById("btnSubmit").innerText = "Update Record";
+        document.getElementById("btnCancel").style.display = "inline-block";
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  </script>
+
+    // Admin Passcode Deletion Authentication
+    function deleteRecordWithAuth(id) {
+        const passcode = prompt("Enter Admin Passcode to Delete this Record:");
+        if (passcode === ADMIN_PASSCODE) {
+            if (confirm("Are you sure you want to delete this record?")) {
+                trackerData = trackerData.filter(item => item.id !== id);
+                saveToStorage();
+                renderTable();
+            }
+        } else if (passcode !== null) {
+            alert("Incorrect Admin Passcode. Deletion cancelled.");
+        }
+    }
+
+    function resetForm() {
+        document.getElementById("trackerForm").reset();
+        document.getElementById("recordId").value = "";
+        document.getElementById("formTitle").innerText = "Add New Exome Test Record";
+        document.getElementById("btnSubmit").innerText = "Save Record";
+        document.getElementById("btnCancel").style.display = "none";
+    }
+
+    function saveToStorage() {
+        localStorage.setItem("exome_tracker_db", JSON.stringify(trackerData));
+    }
+
+    // Initial table render on load
+    renderTable();
+</script>
+
 </body>
 </html>
