@@ -16,6 +16,11 @@
         <h1 class="text-3xl font-bold text-slate-800">🧪 Inpatient Exome Test Tracker</h1>
         <p class="text-sm text-gray-500">Real-time status tracking for clinical exome diagnostics</p>
       </div>
+      <div>
+        <button id="adminStatusBtn" onclick="toggleAdminSession()" class="text-xs bg-slate-200 hover:bg-slate-300 font-semibold px-3 py-1.5 rounded transition">
+          🔒 Admin: Locked
+        </button>
+      </div>
     </header>
 
     <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -124,6 +129,11 @@
   </div>
 
   <script>
+    // 🔑 ADMIN SECURITY CONFIGURATION
+    // Change "1234" below to whatever password or PIN you want to use!
+    const ADMIN_PIN = "2311";
+    let isAdminUnlocked = false;
+
     // ⚙️ FIREBASE CONFIGURATION
     const firebaseConfig = {
       apiKey: "AIzaSyBBXG6uPml-a8Q6Fgk5RldyQBhlSfsj-TA",
@@ -139,6 +149,42 @@
     const db = firebase.database().ref("exome_tests");
 
     document.getElementById("regDate").valueAsDate = new Date();
+
+    // 🔐 Admin Verification Helper
+    function verifyAdminAccess() {
+      if (isAdminUnlocked) return true;
+
+      const inputPin = prompt("🔒 Admin Passcode Required to Edit Records:\nEnter Passcode:");
+      if (inputPin === ADMIN_PIN) {
+        isAdminUnlocked = true;
+        updateAdminBadge();
+        return true;
+      } else if (inputPin !== null) {
+        alert("❌ Incorrect Passcode. Access Denied.");
+      }
+      return false;
+    }
+
+    function toggleAdminSession() {
+      if (isAdminUnlocked) {
+        isAdminUnlocked = false;
+        alert("🔒 Admin mode locked.");
+      } else {
+        verifyAdminAccess();
+      }
+      updateAdminBadge();
+    }
+
+    function updateAdminBadge() {
+      const btn = document.getElementById("adminStatusBtn");
+      if (isAdminUnlocked) {
+        btn.innerText = "🔓 Admin: Unlocked";
+        btn.className = "text-xs bg-green-100 text-green-800 border border-green-300 font-semibold px-3 py-1.5 rounded transition";
+      } else {
+        btn.innerText = "🔒 Admin: Locked";
+        btn.className = "text-xs bg-slate-200 hover:bg-slate-300 text-gray-700 font-semibold px-3 py-1.5 rounded transition";
+      }
+    }
 
     // 📥 Submit New Exome Test
     document.getElementById("testForm").addEventListener("submit", (e) => {
@@ -237,15 +283,23 @@
       });
     });
 
-    // ✅ Toggle "Results Received" Checkbox
+    // ✅ Toggle "Results Received" Checkbox (Requires Passcode)
     window.toggleResult = (id, isChecked) => {
+      if (!verifyAdminAccess()) {
+        // Revert checkbox back if unauthorized
+        db.child(id).once("value", () => {}); // trigger re-render
+        return;
+      }
+
       db.child(id).update({
         resultsReceived: isChecked
       });
     };
 
-    // ✏️ Open Edit Modal & Load Existing Data
+    // ✏️ Open Edit Modal & Load Existing Data (Requires Passcode)
     window.openEditModal = (id) => {
+      if (!verifyAdminAccess()) return;
+
       db.child(id).once("value", (snapshot) => {
         const item = snapshot.val();
         if (!item) return;
@@ -270,6 +324,11 @@
     // 💾 Save Edited Record to Firebase
     document.getElementById("editForm").addEventListener("submit", (e) => {
       e.preventDefault();
+
+      if (!isAdminUnlocked) {
+        alert("Unauthorized.");
+        return;
+      }
 
       const id = document.getElementById("editRecordId").value;
       const updatedData = {
